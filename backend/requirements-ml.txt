@@ -11,4 +11,4 @@
 torch>=2.4.1
 torchvision>=0.19.1
           # MTCNN face detection/cropping
-opencv-python-headless>=4.10.0.84
+opencv-python-headless>=5.0.0.93
