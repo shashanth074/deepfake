@@ -1,6 +1,6 @@
 # --- API layer ---
 fastapi>=0.115.2
-uvicorn[standard]>=0.31.1
+uvicorn[standard]>=0.52.4
 python-multipart>=0.0.12
 pydantic>=2.9.2
 pydantic-settings>=2.5.2
