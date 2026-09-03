@@ -1,0 +1,38 @@
+# Run the same gates CI runs, before the commit rather than after.
+#   pip install pre-commit && pre-commit install
+default_language_version:
+  python: python3.11
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-json
+        exclude: ^frontend/\.eslintrc\.json$   # allows comments
+      - id: check-toml
+      - id: check-merge-conflict
+      - id: check-case-conflict
+      - id: mixed-line-ending
+      - id: check-added-large-files
+        args: [--maxkb=1024]                   # model checkpoints do not belong in git
+      - id: detect-private-key
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.6.9
+    hooks:
+      - id: ruff
+        args: [--fix]
+        files: ^(backend|ml|scripts)/
+      - id: ruff-format
+        files: ^(backend|ml|scripts)/
+
+  - repo: local
+    hooks:
+      - id: no-committed-secrets
+        name: reject a committed .env
+        entry: bash -c 'if git diff --cached --name-only | grep -qE "(^|/)\.env$"; then echo "Refusing to commit a .env file."; exit 1; fi'
+        language: system
+        pass_filenames: false

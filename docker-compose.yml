@@ -1,0 +1,99 @@
+# Local/production-style orchestration: frontend, API, inference worker,
+# PostgreSQL and Redis.
+#
+#   cp .env.example .env      # then set JWT_SECRET_KEY and POSTGRES_PASSWORD
+#   docker compose up --build
+#
+# Frontend: http://localhost:8080   API docs: http://localhost:8000/docs
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-deepfake}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-deepfake}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-deepfake}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--save", "60", "1", "--loglevel", "warning"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  api:
+    build: ./backend
+    # Apply migrations before serving. The schema is owned by Alembic in
+    # production, never by create_all.
+    command: >
+      sh -c "alembic upgrade head &&
+             uvicorn app.main:app --host 0.0.0.0 --port 8000"
+    environment: &backend_env
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-deepfake}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-deepfake}
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/1
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:?set JWT_SECRET_KEY in .env}
+      ENVIRONMENT: ${ENVIRONMENT:-production}
+      DEBUG: ${DEBUG:-false}
+      STORAGE_DIR: /app/storage/uploads
+      EVIDENCE_DIR: /app/storage/evidence
+      REPORT_DIR: /app/storage/reports
+      CHECKPOINT_DIR: /app/checkpoints
+      MAX_UPLOAD_MB: ${MAX_UPLOAD_MB:-100}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8080}
+    volumes:
+      # Shared with the worker: the API writes uploads, the worker reads them
+      # and writes evidence back.
+      - media:/app/storage
+      - ./checkpoints:/app/checkpoints:ro
+    ports:
+      - "8000:8000"
+    depends_on:
+      db: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    restart: unless-stopped
+
+  worker:
+    build: ./backend
+    command: ["celery", "-A", "app.worker.celery_app.celery_app", "worker",
+              "--loglevel=info", "--concurrency=2"]
+    environment: *backend_env
+    volumes:
+      - media:/app/storage
+      - ./checkpoints:/app/checkpoints:ro
+    depends_on:
+      db: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A app.worker.celery_app.celery_app inspect ping -d celery@$$HOSTNAME || exit 1"]
+      interval: 60s
+      timeout: 15s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      - api
+    restart: unless-stopped
+
+volumes:
+  db_data:
+  redis_data:
+  media:

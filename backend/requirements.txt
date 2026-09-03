@@ -1,0 +1,26 @@
+# --- API layer ---
+fastapi>=0.115.2
+uvicorn[standard]>=0.31.1
+python-multipart>=0.0.12
+pydantic>=2.9.2
+pydantic-settings>=2.5.2
+
+# --- Auth ---
+python-jose[cryptography]>=3.3.0
+passlib>=1.7.4
+email-validator>=2.2.0
+
+# --- Database ---
+SQLAlchemy>=2.0.35
+alembic>=1.13.3                 # schema migrations (production owns the schema)
+psycopg[binary]>=3.2.3          # PostgreSQL driver (production)
+
+# --- Queue ---
+celery>=5.4.0
+redis>=5.1.1
+
+# --- Reporting & charts ---
+reportlab>=4.2.5
+matplotlib>=3.9.2
+numpy>=1.26.0
+Pillow>=10.4.0

@@ -1,0 +1,14 @@
+# Inference/training dependencies, separated from the API requirements so an
+# API-only container does not pull ~2 GB of CUDA wheels.
+#
+# For a CPU-only deployment install torch from the CPU index instead:
+#   pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+
+--extra-index-url https://download.pytorch.org/whl/cu124
+
+-r requirements.txt
+
+torch>=2.4.1
+torchvision>=0.19.1
+          # MTCNN face detection/cropping
+opencv-python-headless>=4.10.0.84

@@ -1,0 +1,21 @@
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+exclude = ["node_modules", "dist", ".venv", "data", "storage", "checkpoints"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "C4", "SIM"]
+ignore = [
+    "B008",  # FastAPI dependencies are function calls in defaults by design
+    "E501",  # long lines are caught by the formatter's line-length instead
+    "SIM108",  # an if/else block is often clearer than a nested ternary
+]
+
+[tool.ruff.lint.per-file-ignores]
+"backend/tests/*" = ["E402", "C408"]   # env is configured before app imports
+"ml/*" = ["E402"]              # sys.path is extended before backend imports
+
+[tool.pyright]
+venvPath = "."
+venv = ".venv"
+extraPaths = ["backend"]

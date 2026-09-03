@@ -1,0 +1,77 @@
+DEEPFAKE DETECTION PLATFORM
+Image, audio and video forensic analysis, with automated PDF reporting.
+===============================================================================
+
+RUN IT (two terminals, no Docker, no Redis, no PostgreSQL needed)
+
+  Terminal 1 — backend
+    python -m venv .venv
+    source .venv/bin/activate            (Windows: .venv\Scripts\activate)
+    pip install -r backend/requirements-ml.txt
+    cd backend && uvicorn app.main:app --reload
+        -> API and interactive docs at http://localhost:8000/docs
+
+  Terminal 2 — frontend
+    cd frontend
+    npm install
+    npm run dev
+        -> website at http://localhost:5173
+
+  Or, if you have `make`:  make install && make dev
+
+
+VERIFY IT WORKS
+
+    cd backend && pytest                 136 tests
+    cd frontend && npm run test -- --run 16 tests
+    make check                           lint + tests + frontend build
+
+
+ENTERPRISE-GRADE PRACTICES IN THIS REPO
+
+  - GitHub Actions CI on every push: lint, tests with coverage, frontend
+    build, Docker build check, dependency + static security scan
+    (.github/workflows/ci.yml)
+  - Database migrations via Alembic (backend/alembic/) — production runs
+    on migrations, not create_all
+  - Pre-commit hooks mirroring CI (.pre-commit-config.yaml) — run
+    `make hooks` to install
+  - Dependabot for pip/npm/Docker/Actions (.github/dependabot.yml)
+  - Structured JSON logging with per-request correlation ids in production
+  - Security headers (CSP, X-Frame-Options, etc.) set by the API itself
+  - Production refuses to boot with a placeholder secret, DEBUG on, or
+    wildcard CORS — see backend/app/config.py
+  - LICENSE, SECURITY.md, CONTRIBUTING.md, PR/issue templates
+
+
+IMPORTANT — THE MODELS ARE NOT TRAINED YET
+
+  No trained checkpoints are included. Until you train them, every result
+  comes back around 50% "inconclusive" with a red "this score is not
+  evidence" banner. That warning is deliberate: an untrained model must
+  never be mistaken for a forensic one.
+
+  To train (needs a GPU — use the Colab notebook if you do not have one):
+
+    python scripts/fetch_datasets.py --list      what downloads freely
+    python scripts/fetch_datasets.py faces-140k  needs a free Kaggle token
+    make train-all                               train + evaluate + verify
+    make verify                                  expect "2/2 detectors trained"
+
+  Easiest route: open notebooks/train_on_colab.ipynb in Google Colab,
+  set Runtime -> Change runtime type -> GPU, and run it top to bottom.
+  Then copy the two .pt files into checkpoints/ and restart the backend.
+
+
+WHAT IS WHERE
+
+  backend/     FastAPI app, ML pipelines, Celery worker, PDF report generator
+  frontend/    React + Vite + Tailwind website
+  ml/          offline training: preprocessing, training, evaluation
+  scripts/     dataset download, checkpoint verification
+  notebooks/   Colab GPU training notebook
+  docs/        architecture, datasets, legal & ethics, deployment, report
+  checkpoints/ put your trained .pt files here (empty on purpose)
+  .github/     CI workflow, Dependabot, issue/PR templates
+
+  Full documentation: README.md, SECURITY.md, CONTRIBUTING.md
