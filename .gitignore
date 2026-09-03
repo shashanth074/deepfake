@@ -28,6 +28,7 @@ backend/storage/*
 checkpoints/*
 !checkpoints/.gitkeep
 *.pt
+!checkpoints/image_detector.pt
 *.pth
 *.h5
 *.onnx
