@@ -25,20 +25,8 @@ backend/storage/*
 !backend/storage/.gitkeep
 
 # ML Model Weights, Checkpoints & Training Logs
-checkpoints/*
-!checkpoints/.gitkeep
-*.pt
-!checkpoints/image_detector.pt
-*.pth
-*.h5
-*.onnx
-*.safetensors
-*.bin
-*.pkl
-*.pickle
-*.joblib
-*.csv
-*.log
+!checkpoints/
+!checkpoints/**
 runs/
 wandb/
 reports_out/
